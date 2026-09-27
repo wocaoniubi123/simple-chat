@@ -1,0 +1,35 @@
+name: build-windows
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: app/go.mod
+
+      - name: Build simple-chat.exe (windows/amd64)
+        working-directory: app
+        env:
+          GOOS: windows
+          GOARCH: amd64
+          CGO_ENABLED: "0"
+        run: |
+          mkdir -p ../dist
+          go build -o ../dist/simple-chat.exe .
+          ls -l ../dist/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-chat-windows-amd64
+          path: dist/simple-chat.exe
+          if-no-files-found: error
