@@ -16,6 +16,16 @@ jobs:
         with:
           go-version-file: app/go.mod
 
+      - name: Patch Unix-only 0600 permission check for Windows
+        working-directory: app
+        run: |
+          f=internal/accountstore/json.go
+          grep -q '"runtime"' "$f" || sed -i 's/^import (/import (\n\t"runtime"/' "$f"
+          sed -i 's/if mode := info.Mode().Perm(); mode != 0600 {/if mode := info.Mode().Perm(); mode != 0600 \&\& runtime.GOOS != "windows" {/' "$f"
+          grep -q 'runtime.GOOS != "windows"' "$f" || { echo "::error::0600-check patch did not apply (upstream code changed?)"; exit 1; }
+          grep -q '"runtime"' "$f" || { echo "::error::runtime import missing"; exit 1; }
+          gofmt -w "$f"
+
       - name: Build simple-chat.exe (windows/amd64)
         working-directory: app
         env:
